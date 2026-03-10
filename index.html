@@ -169,14 +169,16 @@ body {
   display: grid;
   grid-template-columns: minmax(0,1fr) minmax(0,560px) minmax(0,1fr);
   grid-template-areas: "left content right";
-  align-items: end;
-  padding-top: var(--sp-lg);
+  align-items: center;
+  padding: var(--sp-md) 0;
 }
 
 /* ── Cat columns ── */
 .cat-col {
   display: flex; align-items: flex-end; overflow: visible;
   min-width: 0;
+  /* Stretch full height so cats sit at bottom */
+  align-self: stretch;
 }
 .cat-col.left  { grid-area:left;  justify-content:flex-end; }
 .cat-col.right { grid-area:right; justify-content:flex-start; }
@@ -198,7 +200,7 @@ body {
   grid-area: content;
   display: flex; flex-direction: column; align-items: center;
   text-align: center;
-  padding: 0 var(--sp-md) clamp(32px,5vh,56px);
+  padding: clamp(16px,3vh,40px) var(--sp-md) clamp(16px,3vh,40px);
   gap: 0; min-width: 0;
 }
 
@@ -251,14 +253,16 @@ body {
 
 .cs-subtitle {
   font-family: var(--font-outline);
-  font-size: clamp(11px, 1.8vw, 22px);
+  /* Scale font so text always fits on one line */
+  font-size: clamp(9px, 2.2vw, 22px);
   color: rgba(245,221,180,.35);
-  letter-spacing: clamp(3px, .8vw, 7px); text-transform: uppercase;
+  letter-spacing: clamp(2px, .6vw, 7px); text-transform: uppercase;
   margin-bottom: clamp(6px, 1.2vh, 12px);
   overflow: hidden;
   white-space: nowrap;
   width: 0;
-  max-width: 100%;
+  /* Max-width relative to viewport so it never overflows */
+  max-width: 90vw;
   border-right: 2px solid rgba(245,221,180,.5);
   opacity: 1;
   animation:
@@ -268,7 +272,7 @@ body {
 }
 @keyframes typewriter {
   from { width: 0; }
-  to   { width: 31ch; }
+  to   { width: min(31ch, 88vw); }
 }
 @keyframes cursorBlink {
   0%, 100% { border-color: rgba(245,221,180,.5); }
@@ -277,6 +281,7 @@ body {
 @keyframes cursorFade {
   to { border-color: transparent; }
 }
+@k
 
 
 
@@ -458,6 +463,28 @@ body {
   .cs-title { font-size: clamp(28px, 5.5vw, 56px); }
 }
 
+/* ── iPad Air (820px) & iPad Pro portrait (1024px) ── */
+@media (min-width: 701px) and (max-width: 1100px) {
+  .hero {
+    align-items: center;
+    padding: clamp(12px, 2vh, 24px) 0;
+  }
+  .hero-content {
+    padding: clamp(12px, 2vh, 28px) var(--sp-md);
+  }
+  .cat-col img {
+    width: clamp(100px, 13vw, 180px);
+    /* Keep cats at bottom of their column */
+    margin-top: auto;
+  }
+  /* Scale down elements slightly to avoid overflow */
+  .hero-logo { width: min(380px, 70vw); }
+  .cs-title  { font-size: clamp(26px, 5vw, 52px); }
+  .tagline   { font-size: clamp(11px, 1.6vw, 15px); }
+  .cd-row    { max-width: 360px; }
+  .email-block { max-width: 340px; }
+}
+
 /* ── Tablet portrait (481px – 700px) ── */
 @media (max-width: 700px) {
   .hero {
@@ -465,7 +492,7 @@ body {
   }
   .cat-col img { width: clamp(75px, 11vw, 100px); }
   .cs-title { white-space: normal; font-size: clamp(28px, 8vw, 46px); }
-  .cs-subtitle { display: none; }
+  .cs-subtitle { font-size: clamp(8px, 1.8vw, 14px); letter-spacing: clamp(1.5px, .5vw, 4px); }
   .sticker.hide-tablet { display: none; }
 }
 
@@ -473,10 +500,10 @@ body {
 @media (max-width: 480px) {
   .hero {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto;
+    grid-template-rows: 1fr auto;
     grid-template-areas: "content" "mob-cats";
-    align-items: start;
-    padding-top: 20px;
+    align-items: center;
+    padding: 0;
   }
   .cat-col { display: none; }
   .mob-cats {
@@ -498,7 +525,7 @@ body {
   }
   .hero-content { padding: 0 16px 20px; }
   .cs-title { font-size: clamp(28px, 11vw, 42px); letter-spacing: 2px; }
-  .cs-subtitle { display: none; }
+  .cs-subtitle { font-size: clamp(7px, 2.8vw, 11px); letter-spacing: 1.5px; }
   .hero-logo { width: min(320px, 86vw); }
   .tagline { font-size: 12px; }
   .cd-row { max-width: 100%; gap: 6px; }
