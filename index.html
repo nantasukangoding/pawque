@@ -611,7 +611,8 @@ body {
   const EMAILJS_PUBLIC_KEY  = 'wNSyYh1BJ6reVFgJO';
   const EMAILJS_SERVICE_ID  = 'service_m2dhi1o';
   const EMAILJS_TEMPLATE_ID = 'template_l6hxaxj';
-  // ──────────────────────────────────────────────────────────────────────────────
+  // ─────────────────────────────────────────────────────────
+  // Init langsung — tidak pakai window.onload agar siap sebelum user klik
   emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
 </script>
 </head>
@@ -696,7 +697,7 @@ body {
     </div>
 
     <div class="social-block">
-      <span class="social-lbl">Ikuti kami</span>
+      <span class="social-lbl">Hubungi Kami!</span>
       <div class="social-row">
         <a href="#" class="s-btn" title="Instagram" aria-label="Instagram">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -782,7 +783,7 @@ if (subtitle) {
   }, 4000);
 }
 // Email subscribe with EmailJS
-async async function doSub() {
+ async function doSub() {
   const inp    = document.getElementById('emailInp');
   const btn    = document.getElementById('subBtn');
   const okMsg  = document.getElementById('okMsg');
@@ -809,10 +810,9 @@ async async function doSub() {
   try {
     // Kirim email konfirmasi ke user via EmailJS
     await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
-      to_email: email,
-      to_name:  email.split('@')[0],   // ambil bagian sebelum @ sebagai nama
+      email:     email,
+      to_name:   email.split('@')[0],
       from_name: 'Pawque',
-      reply_to:  'hello@pawque.id',    // ganti dengan email Pawque
     });
 
     // Sukses
@@ -821,7 +821,7 @@ async async function doSub() {
     setTimeout(() => okMsg.style.display = 'none', 6000);
 
   } catch (err) {
-    console.error('EmailJS error:', err);
+    console.error('[Pawque] EmailJS error:', err?.status, err?.text, err);
     errMsg.style.display = 'block';
     setTimeout(() => errMsg.style.display = 'none', 5000);
   } finally {
@@ -833,6 +833,60 @@ async async function doSub() {
 document.getElementById('emailInp').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSub();
 });
+
+</script>
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+<script>
+  // Inisialisasi akun EmailJS kamu
+  emailjs.init({ publicKey: 'wNSyYh1BJ6reVFgJO' });
+
+  function doSub() {
+    const emailInput = document.getElementById('emailInp');
+    const emailValue = emailInput.value.trim();
+    const okMsg = document.getElementById('okMsg');
+    const errMsg = document.getElementById('errMsg');
+    const subBtn = document.getElementById('subBtn');
+
+    // Cegah proses jika email kosong
+    if (!emailValue) return;
+
+    // Ubah status tombol sementara
+    const originalBtnText = subBtn.innerText;
+    subBtn.innerText = "Tunggu...";
+    subBtn.disabled = true;
+
+    // Ambil awalan email untuk variabel {{to_name}} di EmailJS
+    const namaDariEmail = emailValue.split('@')[0];
+
+    const templateParams = {
+      to_name: namaDariEmail,
+      email: emailValue
+    };
+
+    // Eksekusi pengiriman via EmailJS
+    emailjs.send('service_m2dhi1o', 'template_l6hxaxj', templateParams)
+      .then(function(response) {
+        // Jika Berhasil
+        okMsg.style.display = 'block';
+        errMsg.style.display = 'none';
+        
+        // Reset tombol dan input
+        subBtn.innerText = originalBtnText;
+        subBtn.disabled = false;
+        emailInput.value = '';
+      })
+      .catch(function(error) {
+        // Jika Gagal
+        errMsg.style.display = 'block';
+        okMsg.style.display = 'none';
+        
+        // Reset tombol
+        subBtn.innerText = originalBtnText;
+        subBtn.disabled = false;
+        console.error("EmailJS Error:", error);
+      });
+  }
 </script>
 </body>
 </html>
