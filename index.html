@@ -604,6 +604,16 @@ body {
 /* Hide mob-cats by default (JS shows on mobile) */
 .mob-cats { display: none; }
 </style>
+<!-- EmailJS SDK -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+<script>
+  // ── EMAILJS CREDENTIALS ──────────────────────────────────
+  const EMAILJS_PUBLIC_KEY  = 'wNSyYh1BJ6reVFgJO';
+  const EMAILJS_SERVICE_ID  = 'service_m2dhi1o';
+  const EMAILJS_TEMPLATE_ID = 'template_l6hxaxj';
+  // ──────────────────────────────────────────────────────────────────────────────
+  emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+</script>
 </head>
 <body>
 <div class="page">
@@ -679,9 +689,10 @@ body {
       <span class="email-hint">Jadilah yang pertama tahu saat kami launch ✦</span>
       <div class="email-row">
         <input type="email" class="email-inp" id="emailInp" placeholder="email kamu@sini.com" autocomplete="email">
-        <button class="email-btn" onclick="doSub()">Daftarkan!</button>
+        <button class="email-btn" id="subBtn" onclick="doSub()">Daftarkan!</button>
       </div>
-      <p class="ok-msg" id="okMsg">✦ Yeay! Terima kasih! ✦</p>
+      <p class="ok-msg" id="okMsg">✦ Yeay! Cek inbox kamu ya! ✦</p>
+      <p class="ok-msg" id="errMsg" style="color:#ff8080;">Waduh, gagal dikirim. Coba lagi ya!</p>
     </div>
 
     <div class="social-block">
@@ -732,55 +743,32 @@ body {
 })();
 
 // ── COUNTDOWN ──────────────────────────────────────────
-// Tanggal launch FIXED — ganti sesuai kebutuhan (WIB = UTC+7)
-const LAUNCH_DATE = '2026-04-09T00:00:00+07:00';
-const launch = new Date(LAUNCH_DATE);
-
-// Offset koreksi: selisih waktu server Indonesia vs jam lokal device (ms)
-// Diisi setelah fetch API, default 0
-let serverOffset = 0;
-
-function getNow() {
-  return Date.now() + serverOffset;
-}
+// Launch date fixed: 9 April 2026 pukul 00:00 WIB (UTC+7)
+const LAUNCH = new Date('2026-04-09T00:00:00+07:00').getTime();
 
 function tick() {
-  const d = launch - getNow();
-  if (d <= 0) {
+  const diff = LAUNCH - Date.now();
+
+  if (diff <= 0) {
     document.querySelector('.cd-row').innerHTML =
       '<p style="color:var(--gold-light);font-family:var(--font-display);font-size:clamp(20px,4vw,30px);letter-spacing:2px;">We are LIVE! 🎉</p>';
     return;
   }
+
+  const days    = Math.floor(diff / 86400000);
+  const hours   = Math.floor((diff % 86400000) / 3600000);
+  const minutes = Math.floor((diff % 3600000)  / 60000);
+  const seconds = Math.floor((diff % 60000)    / 1000);
   const pad = n => String(n).padStart(2, '0');
-  document.getElementById('days').textContent    = pad(Math.floor(d / 864e5));
-  document.getElementById('hours').textContent   = pad(Math.floor(d % 864e5 / 36e5));
-  document.getElementById('minutes').textContent = pad(Math.floor(d % 36e5 / 6e4));
-  document.getElementById('seconds').textContent = pad(Math.floor(d % 6e4 / 1e3));
+
+  document.getElementById('days').textContent    = pad(days);
+  document.getElementById('hours').textContent   = pad(hours);
+  document.getElementById('minutes').textContent = pad(minutes);
+  document.getElementById('seconds').textContent = pad(seconds);
 }
 
-// Fetch waktu server Indonesia (WIB) dari WorldTimeAPI
-// Digunakan untuk koreksi offset jika jam device tidak akurat
-async function syncTime() {
-  try {
-    const res = await fetch('https://worldtimeapi.org/api/timezone/Asia/Jakarta');
-    if (!res.ok) throw new Error('API error');
-    const data = await res.json();
-    // unixtime = detik epoch dari server
-    const serverNow = data.unixtime * 1000;
-    const clientNow = Date.now();
-    serverOffset = serverNow - clientNow;
-    console.log(`[Pawque] Time synced. Offset: ${serverOffset}ms`);
-  } catch (e) {
-    // Fallback: pakai jam device, offset tetap 0
-    console.warn('[Pawque] Time sync failed, using device time.', e);
-    serverOffset = 0;
-  }
-  tick();
-  setInterval(tick, 1000);
-}
-
-// Jalankan sync dulu, baru mulai countdown
-syncTime();
+tick();
+setInterval(tick, 1000);
 
 // Safety fallback: jika animasi typewriter tidak jalan (reduced motion / browser lama)
 // paksa tampilkan teks setelah 4 detik
@@ -793,18 +781,54 @@ if (subtitle) {
     }
   }, 4000);
 }
-function doSub() {
-  const inp = document.getElementById('emailInp');
-  const msg = document.getElementById('okMsg');
-  const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Email subscribe with EmailJS
+async async function doSub() {
+  const inp    = document.getElementById('emailInp');
+  const btn    = document.getElementById('subBtn');
+  const okMsg  = document.getElementById('okMsg');
+  const errMsg = document.getElementById('errMsg');
+  const re     = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  // Validasi format email
   if (!re.test(inp.value)) {
     inp.style.color = '#ff8080';
     inp.placeholder = 'Masukkan email yang valid ya!';
     setTimeout(() => { inp.style.color = ''; inp.placeholder = 'email kamu@sini.com'; }, 2400);
     return;
   }
-  inp.value = ''; msg.style.display = 'block';
-  setTimeout(() => msg.style.display = 'none', 4800);
+
+  const email = inp.value.trim();
+
+  // Loading state
+  btn.textContent = '⏳';
+  btn.disabled = true;
+  inp.disabled = true;
+  okMsg.style.display  = 'none';
+  errMsg.style.display = 'none';
+
+  try {
+    // Kirim email konfirmasi ke user via EmailJS
+    await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+      to_email: email,
+      to_name:  email.split('@')[0],   // ambil bagian sebelum @ sebagai nama
+      from_name: 'Pawque',
+      reply_to:  'hello@pawque.id',    // ganti dengan email Pawque
+    });
+
+    // Sukses
+    inp.value = '';
+    okMsg.style.display = 'block';
+    setTimeout(() => okMsg.style.display = 'none', 6000);
+
+  } catch (err) {
+    console.error('EmailJS error:', err);
+    errMsg.style.display = 'block';
+    setTimeout(() => errMsg.style.display = 'none', 5000);
+  } finally {
+    btn.textContent = 'Daftarkan!';
+    btn.disabled = false;
+    inp.disabled = false;
+  }
 }
 document.getElementById('emailInp').addEventListener('keydown', e => {
   if (e.key === 'Enter') doSub();
